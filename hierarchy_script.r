@@ -5,11 +5,11 @@
 # Import and prep lake pulse data.
 
 lakepulse_rene <-
-    read_csv(here("lakepulse_data_curated_mediancorrected_2021-03-23.csv")) |>
+    read_csv(here("Data", "lakepulse_data_curated_mediancorrected_2021-03-23.csv")) |>
     arrange(lake_ID)
 
 zooplankton <-
-    read_delim("Zooplanktonbiomass.csv", delim = ";") |>
+    read_delim(here("Data", "Zooplanktonbiomass.csv"), delim = ";") |>
     rename(lake_ID = Lake_ID) |>
     arrange(lake_ID)
 
