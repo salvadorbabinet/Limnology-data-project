@@ -33,6 +33,20 @@ ggplot(plankton, aes(x = log_chla, y = log_zoo_density)) +
         fill = "Temperature (°C)"
     )
 
+# Test significance for filtered & in vivo measures
+
+gam1 <- gam(log_zoo_density ~ log_chla, data = plankton)
+gam2 <- gam(log_zoo_density ~ s(log_chla), data = plankton)
+
+summary(gam1)
+summary(gam2)
+
+gam1 <- gam(log_zoo_density ~ log_invivo_chla, data = plankton)
+gam2 <- gam(log_zoo_density ~ s(log_invivo_chla), data = plankton)
+
+summary(gam1)
+summary(gam2) # lower R2 than filtered measure
+
 
 # Take temperature ntiles and nest regressions.
 # Then fit simple regression and GAM on nested linear estimates ----
@@ -44,23 +58,33 @@ ntiles_estimates <- nest_temperature(cut_midtemp, ntiles)
 plot_nest(cut_midtemp, ntiles_estimates)
 ntiles_estimates |> arrange(desc(term)) |> print(n = 20)
 
-lm7 <- lm(estimate ~ cut_midtemp, data = filter(ntiles_estimates, term == "adjusted_log_chla"))
+lm7 <- lm(estimate ~ cut_midtemp, data = filter(ntiles_estimates, term == "Effect"))
 summary(lm7)
 
 # For 14 ntiles:
 ntiles <- ncut_temperature(14, plankton)
 ntiles_estimates <- nest_temperature(cut_midtemp, ntiles)
 
-lm14 <- lm(estimate ~ cut_midtemp, data = filter(ntiles_estimates, term == "adjusted_log_chla"))
+lm14 <- lm(estimate ~ cut_midtemp, data = filter(ntiles_estimates, term == "Effect"))
 summary(lm14)
 
-gam14 <- gam(estimate ~ s(cut_midtemp), method = "REML", data = filter(ntiles_estimates, term == "adjusted_log_chla"))
-gam14 <- gam(estimate ~ s(cut_midtemp), data = filter(ntiles_estimates, term == "adjusted_log_chla"))
+gam14 <- gam(estimate ~ s(cut_midtemp), method = "REML", data = filter(ntiles_estimates, term == "Effect"))
+gam14 <- gam(estimate ~ s(cut_midtemp), data = filter(ntiles_estimates, term == "Effect"))
 summary(gam14)
+
+lm14_intercepts <- lm(estimate ~ cut_midtemp, data = filter(ntiles_estimates, term == "Intercept"))
+gam14_intercepts <- gam(estimate ~ s(cut_midtemp), data = filter(ntiles_estimates, term == "Intercept"))
+
+summary(lm14_intercepts)
+summary(gam14_intercepts)
+
 plot_nest(cut_midtemp, ntiles_estimates, plot_fits = TRUE)
 plot(gam14, xlab = "Temperature (°C)", ylab = "Smoothed effect estimate")
+plot(gam14_intercepts, xlab = "Temperature (°C)", ylab = "Smoothed intercept estimate")
 
-gam2 <- gam(estimate ~ cut_midtemp, data = filter(ntiles_estimates, term == "adjusted_log_chla"))
+# Linear test
+
+gam2 <- gam(estimate ~ cut_midtemp, data = filter(ntiles_estimates, term == "Effect"))
 summary(gam2)
 
 AIC(gam14, gam2)

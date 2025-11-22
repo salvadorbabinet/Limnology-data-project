@@ -6,7 +6,7 @@ prep_plankton <- function(lakepulse, zooplankton) {
     plankton <- lakepulse |> select(
         lake_ID, lake_name:longitude, ecozone:size_class,
         watershed_area, max_depth,
-        #rbr_chla_mean_tube, rbr_chla_mean_bottom,
+        rbr_chla_mean_tube, #rbr_chla_mean_bottom,
         rbr_temperature_mean_tube, rbr_temperature_mean_watercolumn,
         chla, fraction_agriculture, tp_tube:tntp_ratio
     )
@@ -26,7 +26,7 @@ prep_plankton <- function(lakepulse, zooplankton) {
 
     left_join(plankton, zoo_density) |>
         rename(
-            #invivo_chla_surface = rbr_chla_mean_tube,
+            invivo_chla = rbr_chla_mean_tube,
             #invivo_chla_bottom = rbr_chla_mean_bottom,
             #filtered_chla_surface = chla,
             surface_temp = rbr_temperature_mean_tube,
@@ -34,12 +34,13 @@ prep_plankton <- function(lakepulse, zooplankton) {
         ) |>
         mutate(
             log_chla = log(chla),
+            log_invivo_chla = log(invivo_chla),
             log_zoo_density = log(zoo_density),
             log_nitrogen = log(tn_tube),
             log_phosphorus = log(tp_tube),
             .after = chla
         ) |>
-        relocate(chla, zoo_density, .after = fraction_agriculture)
+        relocate(chla, invivo_chla, zoo_density, .after = fraction_agriculture)
 
 }
 
@@ -149,7 +150,8 @@ nest_temperature <- function(nesting_var, input_data) {
             tidymodels = list(broom::tidy(models))
         ) |>
         select(!c(data, models)) |>
-        unnest(tidymodels)
+        unnest(tidymodels) |>
+        mutate(term = if_else(term == "(Intercept)", "Intercept", "Effect"))
 
 }
 
@@ -159,7 +161,7 @@ plot_nest <- function(nesting_var, data_nest, plot_fits = FALSE) {
 
     effect_plot <- 
         ggplot(
-            filter(data_nest, term == "adjusted_log_chla"),
+            filter(data_nest, term == "Effect"),
             aes(y = {{ nesting_var }}, x = estimate)) +
         geom_point(size = 3.5) +
         geom_errorbar(mapping = aes(xmin = estimate - std.error, xmax = estimate + std.error)) +
@@ -185,9 +187,9 @@ plot_nest <- function(nesting_var, data_nest, plot_fits = FALSE) {
 
     if (plot_fits == TRUE) {
 
-    intercept_estimate_plot2 <-
+    estimate_plot1 <-
         ggplot(
-            filter(data_nest, term == "adjusted_log_chla"),
+            filter(data_nest, term == "Effect"),
             aes(x = {{ nesting_var }}, y = estimate)
         ) +
         geom_point(aes(fill = {{ nesting_var }}), shape = 21, size = 4) +
@@ -202,7 +204,26 @@ plot_nest <- function(nesting_var, data_nest, plot_fits = FALSE) {
             y = "Effect estimate"
         )
 
-    print(intercept_estimate_plot2)
+    estimate_plot2 <-
+        ggplot(
+            filter(data_nest, term == "Intercept"),
+            aes(x = {{ nesting_var }}, y = estimate)
+        ) +
+        geom_point(aes(fill = {{ nesting_var }}), shape = 21, size = 4) +
+        geom_line(aes(y = fitted(lm14_intercepts)), linetype = 2) +
+        geom_line(aes(y = fitted(gam14_intercepts)), color = "red") +
+        scale_fill_gradient2(
+            low = "blue", mid = "orange", high = "red",
+            midpoint = median(data_nest$cut_midtemp)
+        ) +
+        labs(
+            x = "Temperature (°C)", fill = "Temperature (°C)",
+            y = "Intercept estimate"
+        )
+
+    print(estimate_plot2)
+
+    print(estimate_plot1 + estimate_plot2)
 
     }
 
