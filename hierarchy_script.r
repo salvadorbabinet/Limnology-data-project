@@ -1,6 +1,8 @@
 # Data project scripts for limnology.
 # Hierarchical temperature models.
 
+library(mgcv)
+
 
 # Import and prep lake pulse data.
 
@@ -33,7 +35,7 @@ ggplot(plankton, aes(x = log_chla, y = log_zoo_density)) +
 
 
 # Take temperature ntiles and nest regressions.
-# Then fit simple regression and GAM on nested linear estimates.
+# Then fit simple regression and GAM on nested linear estimates ----
 
 # For 7 ntiles:
 ntiles <- ncut_temperature(7, plankton)
@@ -52,10 +54,11 @@ ntiles_estimates <- nest_temperature(cut_midtemp, ntiles)
 lm14 <- lm(estimate ~ cut_midtemp, data = filter(ntiles_estimates, term == "adjusted_log_chla"))
 summary(lm14)
 
+gam14 <- gam(estimate ~ s(cut_midtemp), method = "REML", data = filter(ntiles_estimates, term == "adjusted_log_chla"))
 gam14 <- gam(estimate ~ s(cut_midtemp), data = filter(ntiles_estimates, term == "adjusted_log_chla"))
-summary(gam1)
+summary(gam14)
 plot_nest(cut_midtemp, ntiles_estimates, plot_fits = TRUE)
-plot(gam1, xlab = "Temperature (°C)", ylab = "Smoothed effect estimate")
+plot(gam14, xlab = "Temperature (°C)", ylab = "Smoothed effect estimate")
 
 gam2 <- gam(estimate ~ cut_midtemp, data = filter(ntiles_estimates, term == "adjusted_log_chla"))
 summary(gam2)
