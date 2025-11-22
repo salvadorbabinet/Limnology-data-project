@@ -2,7 +2,6 @@
 # This script runs simple models for hypothesis testing.
 
 library(mgcv)
-library
 
 str(plankton)
 plankton <- mutate(plankton, lake_ID = factor(lake_ID))

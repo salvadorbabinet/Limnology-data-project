@@ -163,7 +163,10 @@ plot_nest <- function(nesting_var, data_nest, plot_fits = FALSE) {
             aes(y = {{ nesting_var }}, x = estimate)) +
         geom_point(size = 3.5) +
         geom_errorbar(mapping = aes(xmin = estimate - std.error, xmax = estimate + std.error)) +
-        geom_vline(xintercept = 0)
+        geom_vline(xintercept = 0) +
+        labs(
+            x = "Effect estimate", y = "Temperature (°C)"
+        )
 
     print(effect_plot)
 
@@ -172,7 +175,11 @@ plot_nest <- function(nesting_var, data_nest, plot_fits = FALSE) {
         geom_point(aes(fill = {{ nesting_var }}), size = 3.5, shape = 21) +
         geom_smooth(method = lm, color = "black", linewidth = 1, alpha = 0.2) +
         scale_fill_gradient2(low = "blue", mid = "orange", high = "red", midpoint = median(data_nest$cut_midtemp)) +
-        facet_wrap(~term, scales = "free")
+        facet_wrap(~term, scales = "free") +
+        labs(
+            x = "Temperature (°C)", fill = "Temperature (°C)",
+            y = "Estimate"
+        )
 
     print(intercept_effect_plot1)
 
@@ -183,9 +190,17 @@ plot_nest <- function(nesting_var, data_nest, plot_fits = FALSE) {
             filter(data_nest, term == "adjusted_log_chla"),
             aes(x = {{ nesting_var }}, y = estimate)
         ) +
-        geom_point(size = 3) +
-        geom_line(aes(y = fitted(lm1))) +
-        geom_line(aes(y = fitted(gam1)))
+        geom_point(aes(fill = {{ nesting_var }}), shape = 21, size = 4) +
+        geom_line(aes(y = fitted(lm14)), linetype = 2) +
+        geom_line(aes(y = fitted(gam14)), color = "red") +
+        scale_fill_gradient2(
+            low = "blue", mid = "orange", high = "red",
+            midpoint = median(data_nest$cut_midtemp)
+        ) +
+        labs(
+            x = "Temperature (°C)", fill = "Temperature (°C)",
+            y = "Effect estimate"
+        )
 
     print(intercept_estimate_plot2)
 
