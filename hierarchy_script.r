@@ -21,7 +21,7 @@ plankton
 
 # Plot plankton densities.
 
-ggplot(plankton, aes(x = log_chla, y = log_zoo_density)) +
+plankton_plot <- ggplot(plankton, aes(x = log_chla, y = log_zoo_density)) +
     geom_point(mapping = aes(fill = watercolumn_temp), alpha = 0.8, size = 3, shape = 21) +
     geom_smooth(
         color = "black", linetype = 1,
@@ -32,6 +32,8 @@ ggplot(plankton, aes(x = log_chla, y = log_zoo_density)) +
         y = "Zooplankton biomass (log µg/L)",
         fill = "Temperature (°C)"
     )
+
+plankton_plot
 
 # Test significance for filtered & in vivo measures
 
@@ -79,8 +81,78 @@ summary(lm14_intercepts)
 summary(gam14_intercepts)
 
 plot_nest(cut_midtemp, ntiles_estimates, plot_fits = TRUE)
-plot(gam14, xlab = "Temperature (°C)", ylab = "Smoothed effect estimate")
 plot(gam14_intercepts, xlab = "Temperature (°C)", ylab = "Smoothed intercept estimate")
+plot(gam14, xlab = "Temperature (°C)", ylab = "Smoothed effect estimate")
+
+
+# Could fit polynomial multiple regression instead of GAM
+# Which is perhaps more sound with so few observations...
+
+summary(lm14)
+
+lm_quad <- lm(estimate ~ cut_midtemp + I(cut_midtemp^2), data = filter(ntiles_estimates, term == "Effect"))
+summary(lm_quad)
+
+lm_cubic <- lm(estimate ~ cut_midtemp + I(cut_midtemp^2) + I(cut_midtemp^3), data = filter(ntiles_estimates, term == "Effect"))
+summary(lm_cubic)
+
+ggplot(
+    filter(ntiles_estimates, term == "Effect"),
+    aes(x = cut_midtemp, y = estimate)
+    ) +
+    geom_point(aes(fill = cut_midtemp), shape = 21, size = 4) +
+    geom_line(aes(y = fitted(lm14)), color = "black", linetype = 2) +
+    geom_line(aes(y = fitted(lm_cubic)), color = "red") +
+    scale_fill_gradient2(
+        low = "blue", mid = "orange", high = "red",
+        midpoint = median(ntiles_estimates$cut_midtemp)
+    ) +
+    labs(
+        x = "Temperature (°C)", fill = "Temperature (°C)",
+        y = "Effect estimate"
+    )
+
+summary(lm14_intercepts)
+
+lm_quadintercepts <- lm(estimate ~ cut_midtemp + I(cut_midtemp^2), data = filter(ntiles_estimates, term == "Intercept"))
+summary(lm_quadintercepts)
+
+lm_cubicintercepts <- lm(estimate ~ cut_midtemp + I(cut_midtemp^2) + I(cut_midtemp^3), data = filter(ntiles_estimates, term == "Intercept"))
+summary(lm_cubicintercepts)
+
+ggplot(
+    filter(ntiles_estimates, term == "Intercept"),
+    aes(x = cut_midtemp, y = estimate)
+    ) +
+    geom_point(aes(fill = cut_midtemp), shape = 21, size = 4) +
+    geom_line(aes(y = fitted(lm14_intercepts)), color = "black", linetype = 2) +
+    geom_line(aes(y = fitted(lm_quadintercepts)), color = "red") +
+    scale_fill_gradient2(
+        low = "blue", mid = "orange", high = "red",
+        midpoint = median(ntiles_estimates$cut_midtemp)
+    ) +
+    labs(
+        x = "Temperature (°C)", fill = "Temperature (°C)",
+        y = "Intercept estimate"
+    )
+
+
+ggplot(filter(ntiles_estimates, term == "Effect"), aes(x = cut_midtemp, y = estimate)) +
+    geom_point(aes(fill = cut_midtemp), shape = 21, size = 4) +
+    geom_smooth(
+        method = lm,
+        formula = y ~ poly(x, 3),
+        color = "black",
+        linewidth = 0.8,
+        alpha = 0.1
+    ) +
+    scale_fill_gradient2(
+        low = "blue", mid = "orange", high = "red",
+        midpoint = median(ntiles_estimates$cut_midtemp)
+    )
+
+
+# WIP ----
 
 # Linear test
 
@@ -90,8 +162,7 @@ summary(gam2)
 AIC(gam14, gam2)
 gam.check(gam14)
 
-
-# Take temperature cuts and nest regressions ----
+# Take temperature cuts and nest regressions
 
 pools <- cut_temperature(9, plankton, pool_cuts = TRUE)
 pools_estimates <- nest_temperature(cut_midtemp, pools)

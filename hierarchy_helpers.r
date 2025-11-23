@@ -187,7 +187,7 @@ plot_nest <- function(nesting_var, data_nest, plot_fits = FALSE) {
 
     if (plot_fits == TRUE) {
 
-    estimate_plot1 <-
+    estimate_plot2 <-
         ggplot(
             filter(data_nest, term == "Effect"),
             aes(x = {{ nesting_var }}, y = estimate)
@@ -204,7 +204,7 @@ plot_nest <- function(nesting_var, data_nest, plot_fits = FALSE) {
             y = "Effect estimate"
         )
 
-    estimate_plot2 <-
+    estimate_plot1 <-
         ggplot(
             filter(data_nest, term == "Intercept"),
             aes(x = {{ nesting_var }}, y = estimate)
@@ -221,9 +221,14 @@ plot_nest <- function(nesting_var, data_nest, plot_fits = FALSE) {
             y = "Intercept estimate"
         )
 
+    print(estimate_plot1)
     print(estimate_plot2)
 
-    print(estimate_plot1 + estimate_plot2)
+    estimate_plot1 <-
+        estimate_plot1 +
+        theme(legend.position = "none")
+
+    print(estimate_plot1 + estimate_plot2 + plot_layout(axes = "collect_x"))
 
     }
 
