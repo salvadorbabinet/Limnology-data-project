@@ -54,7 +54,7 @@ summary(gam2) # Even lower R2 than filtered measure
 # Then fit simple regression and GAM on nested linear estimates ----
 
 # For 7 ntiles:
-ntiles <- ncut_temperature(7, plankton)
+ntiles <- ncut_temperature(10, plankton)
 ntiles_estimates <- nest_temperature(cut_midtemp, ntiles)
 
 plot_nest(cut_midtemp, ntiles_estimates)
@@ -104,7 +104,7 @@ summary(lm_quad)
 lm_cubic <- lm(estimate ~ cut_midtemp + I(cut_midtemp^2) + I(cut_midtemp^3), data = filter(ntiles_estimates, term == "Effect"))
 summary(lm_cubic) # Final model for effect estimates (on n = 7, n = 14).
 
-ggplot(
+effects_cubic <- ggplot(
     filter(ntiles_estimates, term == "Effect"),
     aes(x = cut_midtemp, y = estimate)
     ) +
@@ -129,7 +129,7 @@ summary(lm_quadintercepts) # Final model for intercept estimates.
 lm_cubicintercepts <- lm(estimate ~ cut_midtemp + I(cut_midtemp^2) + I(cut_midtemp^3), data = filter(ntiles_estimates, term == "Intercept"))
 summary(lm_cubicintercepts)
 
-ggplot(
+intercepts_quad <- ggplot(
     filter(ntiles_estimates, term == "Intercept"),
     aes(x = cut_midtemp, y = estimate)
     ) +
@@ -143,9 +143,13 @@ ggplot(
     labs(
         x = "Temperature (°C)", fill = "Temperature (°C)",
         y = "Intercept estimate"
-    )
+    ) +
+    theme(legend.position = "none")
+
+intercepts_quad + effects_cubic + plot_layout(axes = "collect_x")
 
 
+# Smoothed polynomial errors (though showing GAM outputs looks pretty)
 ggplot(filter(ntiles_estimates, term == "Effect"), aes(x = cut_midtemp, y = estimate)) +
     geom_point(aes(fill = cut_midtemp), shape = 21, size = 4) +
     geom_smooth(
@@ -159,6 +163,27 @@ ggplot(filter(ntiles_estimates, term == "Effect"), aes(x = cut_midtemp, y = esti
         low = "blue", mid = "orange", high = "red",
         midpoint = median(ntiles_estimates$cut_midtemp)
     )
+
+
+# Results table
+
+lm1 <- lm(log_zoo_density ~ log_chla, data = plankton)
+lm_results <-
+    bind_rows(glance(lm1), glance(lm_quadintercepts), glance(lm_cubic)) |>
+    mutate(
+        name = c("All (linear)", "Intercepts (quadratic)",
+        "Effects (cubic)"), .before = r.squared) |>
+    select(name, df, p.value, adj.r.squared, nobs)
+
+lm_results
+write_csv(lm_results, "Nested_regression_outputs.csv")
+
+tidy(lm1)
+tidy(lm_quadintercepts)
+tidy(lm_cubic)
+
+tidy(gam14)
+tidy(gam14_intercepts)
 
 
 # WIP ----

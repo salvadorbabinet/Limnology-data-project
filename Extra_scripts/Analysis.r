@@ -359,5 +359,23 @@ summary(lm3)
 ggplot(plankton, aes(x = log_zoo_density, y = log_filtered_chla_surface)) +
     geom_point()
 
-lm4 <- lm(log_zoo_density ~ log_filtered_chla_surface * watercolumn_temp + max_depth + log_tn_tube, data = plankton)
+lm4 <- lm(log_zoo_density ~ log_chla * watercolumn_temp + max_depth + log(tn_tube), data = plankton)
 summary(lm4)
+
+
+# Plankton to temperature
+
+gam1 <- gam(log_zoo_density ~ surface_temp, data = plankton)
+summary(gam1)
+
+gam2 <- gam(log_zoo_density ~ s(watercolumn_temp) + log(tp_tube) + max_depth, data = plankton)
+summary(gam2)
+
+gam3 <- gam(log_chla ~ surface_temp, data = plankton)
+summary(gam3)
+
+gam3 <- gam(log_chla ~ s(watercolumn_temp) + log(tp_tube), data = plankton)
+summary(gam3)
+
+gam4 <- gam(log_chla ~ s(surface_temp), data = plankton)
+summary(gam4)
