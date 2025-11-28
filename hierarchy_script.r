@@ -19,7 +19,7 @@ plankton <- prep_plankton(lakepulse_rene, zooplankton)
 plankton
 
 
-# Plot plankton densities.
+# Plankton densities ----
 
 plankton_plot <- ggplot(plankton, aes(x = log_chla, y = log_zoo_density)) +
     geom_point(mapping = aes(fill = watercolumn_temp), alpha = 0.8, size = 3, shape = 21) +
@@ -49,16 +49,24 @@ gam2 <- gam(log_zoo_density ~ s(log_invivo_chla), data = plankton)
 summary(gam1)
 summary(gam2) # Even lower R2 than filtered measure
 
+gam1 <- gam(log_chla ~ log_zoo_density, data = plankton)
+gam2 <- gam(log_chla ~ s(log_zoo_density), data = plankton)
+
+summary(gam1)
+summary(gam2)
+
 
 # Take temperature ntiles and nest regressions.
-# Then fit simple regression and GAM on nested linear estimates ----
 
-# For 7 ntiles:
-ntiles <- ncut_temperature(10, plankton)
+# For 7 (or 10, 11) ntiles:
+ntiles <- ncut_temperature(11, plankton)
 ntiles_estimates <- nest_temperature(cut_midtemp, ntiles)
 
 plot_nest(cut_midtemp, ntiles_estimates)
 ntiles_estimates |> arrange(desc(term)) |> print(n = 20)
+
+
+# Then fit simple regression and GAM on nested linear estimates ----
 
 lm7 <- lm(estimate ~ cut_midtemp, data = filter(ntiles_estimates, term == "Effect"))
 summary(lm7)
@@ -96,73 +104,23 @@ gam.check(gam14)
 # Could fit polynomial regression instead of GAM, which
 # is perhaps more sound with so few observations... ----
 
-summary(lm14)
-
-lm_quad <- lm(estimate ~ cut_midtemp + I(cut_midtemp^2), data = filter(ntiles_estimates, term == "Effect"))
-summary(lm_quad)
+lm_lin <- lm(estimate ~ cut_midtemp, data = filter(ntiles_estimates, term == "Effect"))
+summary(lm_lin)
 
 lm_cubic <- lm(estimate ~ cut_midtemp + I(cut_midtemp^2) + I(cut_midtemp^3), data = filter(ntiles_estimates, term == "Effect"))
-summary(lm_cubic) # Final model for effect estimates (on n = 7, n = 14).
+summary(lm_cubic) # Final model for effect estimates (on n = 7, n = 11, n = 14).
 
-effects_cubic <- ggplot(
-    filter(ntiles_estimates, term == "Effect"),
-    aes(x = cut_midtemp, y = estimate)
-    ) +
-    geom_point(aes(fill = cut_midtemp), shape = 21, size = 4) +
-    geom_line(aes(y = fitted(lm14)), color = "black", linetype = 2) +
-    #geom_line(aes(y = fitted(gam7))) +
-    geom_line(aes(y = fitted(lm_cubic)), color = "red") +
-    scale_fill_gradient2(
-        low = "blue", mid = "orange", high = "red",
-        midpoint = median(ntiles_estimates$cut_midtemp)
-    ) +
-    labs(
-        x = "Temperature (°C)", fill = "Temperature (°C)",
-        y = "Effect estimate"
-    )
-
-summary(lm14_intercepts)
+lm_intercepts <- lm(estimate ~ cut_midtemp, data = filter(ntiles_estimates, term == "Intercept"))
+summary(lm_intercepts)
 
 lm_quadintercepts <- lm(estimate ~ cut_midtemp + I(cut_midtemp^2), data = filter(ntiles_estimates, term == "Intercept"))
 summary(lm_quadintercepts) # Final model for intercept estimates.
 
-lm_cubicintercepts <- lm(estimate ~ cut_midtemp + I(cut_midtemp^2) + I(cut_midtemp^3), data = filter(ntiles_estimates, term == "Intercept"))
-summary(lm_cubicintercepts)
+# Fitted polynomial regression estimates.
+polyplot_nest1(ntiles_estimates)
 
-intercepts_quad <- ggplot(
-    filter(ntiles_estimates, term == "Intercept"),
-    aes(x = cut_midtemp, y = estimate)
-    ) +
-    geom_point(aes(fill = cut_midtemp), shape = 21, size = 4) +
-    geom_line(aes(y = fitted(lm14_intercepts)), color = "black", linetype = 2) +
-    geom_line(aes(y = fitted(lm_quadintercepts)), color = "red") +
-    scale_fill_gradient2(
-        low = "blue", mid = "orange", high = "red",
-        midpoint = median(ntiles_estimates$cut_midtemp)
-    ) +
-    labs(
-        x = "Temperature (°C)", fill = "Temperature (°C)",
-        y = "Intercept estimate"
-    ) +
-    theme(legend.position = "none")
-
-intercepts_quad + effects_cubic + plot_layout(axes = "collect_x")
-
-
-# Smoothed polynomial errors (though showing GAM outputs looks pretty)
-ggplot(filter(ntiles_estimates, term == "Effect"), aes(x = cut_midtemp, y = estimate)) +
-    geom_point(aes(fill = cut_midtemp), shape = 21, size = 4) +
-    geom_smooth(
-        method = lm,
-        formula = y ~ poly(x, 3),
-        color = "black",
-        linewidth = 0.8,
-        alpha = 0.1
-    ) +
-    scale_fill_gradient2(
-        low = "blue", mid = "orange", high = "red",
-        midpoint = median(ntiles_estimates$cut_midtemp)
-    )
+# Smoothed polynomial errors.
+polyplot_nest2(ntiles_estimates)
 
 
 # Results table

@@ -233,3 +233,88 @@ plot_nest <- function(nesting_var, data_nest, plot_fits = FALSE) {
     }
 
 }
+
+
+# Plot polynomial regression on nest estimates.
+polyplot_nest1 <- function(data_nest) {
+
+effects_cubic <- ggplot(
+    filter(data_nest, term == "Effect"),
+    aes(x = cut_midtemp, y = estimate)
+    ) +
+    geom_point(aes(fill = cut_midtemp), shape = 21, size = 4) +
+    geom_line(aes(y = fitted(lm_lin)), color = "black", linetype = 2) +
+    geom_line(aes(y = fitted(lm_cubic)), color = "red") +
+    scale_fill_gradient2(
+        low = "blue", mid = "orange", high = "red",
+        midpoint = median(data_nest$cut_midtemp)
+    ) +
+    labs(
+        x = "Temperature (°C)", fill = "Temperature (°C)",
+        y = "Effect estimate"
+    )
+
+intercepts_quad <- ggplot(
+    filter(data_nest, term == "Intercept"),
+    aes(x = cut_midtemp, y = estimate)
+    ) +
+    geom_point(aes(fill = cut_midtemp), shape = 21, size = 4) +
+    geom_line(aes(y = fitted(lm_intercepts)), color = "black", linetype = 2) +
+    geom_line(aes(y = fitted(lm_quadintercepts)), color = "red") +
+    scale_fill_gradient2(
+        low = "blue", mid = "orange", high = "red",
+        midpoint = median(data_nest$cut_midtemp)
+    ) +
+    labs(
+        x = "Temperature (°C)", fill = "Temperature (°C)",
+        y = "Intercept estimate"
+    ) +
+    theme(legend.position = "none")
+
+intercepts_quad + effects_cubic + plot_layout(axes = "collect_x")
+
+}
+
+
+polyplot_nest2 <- function(data_nest) {
+
+spoly_effects <- ggplot(filter(data_nest, term == "Effect"), aes(x = cut_midtemp, y = estimate)) +
+    geom_point(aes(fill = cut_midtemp), shape = 21, size = 4) +
+    geom_smooth(
+        method = lm,
+        formula = y ~ poly(x, 3),
+        color = "black",
+        linewidth = 0.7,
+        alpha = 0.1
+    ) +
+    scale_fill_gradient2(
+        low = "blue", mid = "orange", high = "red",
+        midpoint = median(data_nest$cut_midtemp)
+    ) +
+    labs(
+        x = "Temperature (°C)", fill = "Temperature (°C)",
+        y = "Effect estimate"
+    )
+
+spoly_intercepts <- ggplot(filter(data_nest, term == "Intercept"), aes(x = cut_midtemp, y = estimate)) +
+    geom_point(aes(fill = cut_midtemp), shape = 21, size = 4) +
+    geom_smooth(
+        method = lm,
+        formula = y ~ poly(x, 2),
+        color = "black",
+        linewidth = 0.7,
+        alpha = 0.1
+    ) +
+    scale_fill_gradient2(
+        low = "blue", mid = "orange", high = "red",
+        midpoint = median(data_nest$cut_midtemp)
+    ) +
+    labs(
+        x = "Temperature (°C)", fill = "Temperature (°C)",
+        y = "Intercept estimate"
+    ) +
+    theme(legend.position = "none")
+
+spoly_intercepts + spoly_effects + plot_layout(axes = "collect_x")
+
+}
