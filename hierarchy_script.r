@@ -21,11 +21,14 @@ plankton
 
 # Plankton densities ----
 
+lm1 <- lm(log_zoo_density ~ log_chla, data = plankton)
+gam1 <- gam(log_zoo_density ~ s(log_chla), data = plankton)
+
 plankton_plot <- ggplot(plankton, aes(x = log_chla, y = log_zoo_density)) +
-    geom_point(mapping = aes(fill = watercolumn_temp), alpha = 0.8, size = 3, shape = 21) +
-    geom_smooth(
-        color = "black", linetype = 1,
-        method = "lm", se = FALSE) +
+    geom_point(mapping = aes(fill = watercolumn_temp), alpha = 0.5, size = 3, shape = 21) +
+    #geom_line(mapping = aes(y = fitted(gam1)),
+    geom_smooth(method = lm, alpha = 0.2, #se = FALSE,
+        color = "black", linewidth = 0.7) +
     scale_fill_gradient2(low = "blue", mid = "orange", high = "red", midpoint = 17) +
     labs(
         x = "Chlorophyll a (log µg/L)",
@@ -58,12 +61,12 @@ summary(gam2)
 
 # Take temperature ntiles and nest regressions.
 
-# For 7 (or 10, 11) ntiles:
-ntiles <- ncut_temperature(11, plankton)
+# For 7 (or 10, 11, 12) ntiles:
+ntiles <- ncut_temperature(12, plankton)
 ntiles_estimates <- nest_temperature(cut_midtemp, ntiles)
 
 plot_nest(cut_midtemp, ntiles_estimates)
-ntiles_estimates |> arrange(desc(term)) |> print(n = 20)
+ntiles_estimates |> arrange(term) |> print(n = 20)
 
 
 # Then fit simple regression and GAM on nested linear estimates ----
@@ -105,13 +108,11 @@ gam.check(gam14)
 # is perhaps more sound with so few observations... ----
 
 lm_lin <- lm(estimate ~ cut_midtemp, data = filter(ntiles_estimates, term == "Effect"))
-summary(lm_lin)
 
 lm_cubic <- lm(estimate ~ cut_midtemp + I(cut_midtemp^2) + I(cut_midtemp^3), data = filter(ntiles_estimates, term == "Effect"))
 summary(lm_cubic) # Final model for effect estimates (on n = 7, n = 11, n = 14).
 
 lm_intercepts <- lm(estimate ~ cut_midtemp, data = filter(ntiles_estimates, term == "Intercept"))
-summary(lm_intercepts)
 
 lm_quadintercepts <- lm(estimate ~ cut_midtemp + I(cut_midtemp^2), data = filter(ntiles_estimates, term == "Intercept"))
 summary(lm_quadintercepts) # Final model for intercept estimates.
@@ -134,7 +135,7 @@ lm_results <-
     select(name, df, p.value, adj.r.squared, nobs)
 
 lm_results
-write_csv(lm_results, "Nested_regression_outputs.csv")
+write_csv(lm_results, "12n_nested_regression_outputs.csv")
 
 tidy(lm1)
 tidy(lm_quadintercepts)
