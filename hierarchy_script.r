@@ -18,17 +18,30 @@ zooplankton <-
 plankton <- prep_plankton(lakepulse_rene, zooplankton)
 plankton
 
+max(plankton$watercolumn_temp) - min(plankton$watercolumn_temp)
+summary(plankton$watercolumn_temp)
+mean(plankton$watercolumn_temp)
+sd(plankton$watercolumn_temp)
+
 
 # Plankton densities ----
 
 lm1 <- lm(log_zoo_density ~ log_chla, data = plankton)
-gam1 <- gam(log_zoo_density ~ s(log_chla), data = plankton)
+lm2 <- lm(log_zoo_density ~ log_chla + I(log_chla^2), data = plankton)
+gam1 <- gam(log_zoo_density ~ s(log_chla, k = 20), data = plankton)
 
-plankton_plot <- ggplot(plankton, aes(x = log_chla, y = log_zoo_density)) +
-    geom_point(mapping = aes(fill = watercolumn_temp), alpha = 0.5, size = 3, shape = 21) +
-    #geom_line(mapping = aes(y = fitted(gam1)),
-    geom_smooth(method = lm, alpha = 0.2, #se = FALSE,
-        color = "black", linewidth = 0.7) +
+summary(gam1)
+gam.check(gam1)
+
+plankton_plot <- ggplot(
+    filter(plankton, !is.na(log_zoo_density)),
+    aes(x = log_chla, y = log_zoo_density)
+    ) +
+    geom_point(mapping = aes(fill = watercolumn_temp), alpha = 0.6, size = 3, shape = 21) +
+    geom_line(mapping = aes(y = fitted(lm1)),
+    #geom_smooth(method = lm, alpha = 0.2, #se = FALSE,
+        color = "black", linewidth = 1.2) +
+    geom_line(mapping = aes(y = fitted(gam1)), color = "red", linewidth = 1.2) +
     scale_fill_gradient2(low = "blue", mid = "orange", high = "red", midpoint = 17) +
     labs(
         x = "Chlorophyll a (log µg/L)",
